@@ -1,13 +1,26 @@
 # 手写代码
-- [ ] 节流&防抖
+- [x] 节流&防抖
   - [ ] 实现一个节流函数? 如果想要最后一次必须执行的话怎么实现?
 - [ ] sleep函数
 - [ ] 实现一个批量请求函数, 能够限制并发量?
 - [ ] 深克隆
-- [ ] apply bind call
+- [x] apply bind call
 - [ ] instanceof
 - [ ] new
 - [ ] promise
 - [ ] JSON
 - [ ] Redux
 - [ ] PubSub
+- [ ] Array
+  - [ ] map
+  - [ ] forEach
+  - [ ] filter
+  - [ ] reduce
+  - [ ] some
+  - [ ] any
+  - [ ] slice
+  - [ ] splice
+  - [ ] flat
+  - [ ] flatMap
+  - [ ] isArray
+  - [ ] 去重
