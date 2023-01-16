@@ -5,9 +5,9 @@
 - [ ] 实现一个批量请求函数, 能够限制并发量?
 - [ ] 深克隆
 - [x] apply bind call
-- [ ] instanceof
-- [ ] new
-- [ ] promise
+- [x] instanceof
+- [x] new
+- [ ] Promise
 - [ ] JSON
 - [ ] Redux
 - [ ] PubSub
