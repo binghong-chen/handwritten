@@ -3,14 +3,16 @@
   - [ ] 实现一个节流函数? 如果想要最后一次必须执行的话怎么实现?
 - [ ] sleep函数
 - [ ] 实现一个批量请求函数, 能够限制并发量?
-- [ ] 深克隆
+- [x] 深克隆
 - [x] apply bind call
 - [x] instanceof
 - [x] new
-- [ ] Promise
+- [x] Promise
 - [ ] JSON
 - [ ] Redux
 - [ ] PubSub
+- [ ] 模板引擎
+- [x] sleep
 - [ ] Array
   - [ ] map
   - [ ] forEach
