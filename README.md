@@ -25,3 +25,6 @@
   - [ ] flatMap
   - [ ] isArray
   - [ ] 去重
+- [ ] localStore封装
+  - [x] JSON自动转换
+  - [ ] expire 过期
