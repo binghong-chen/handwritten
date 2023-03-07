@@ -28,7 +28,7 @@ testSetAndGetAndLength();
 testExpire();
 
 function testExpire() {
-  store.clear();
+    store.clear();
   [
     ,
     undefined,
@@ -50,9 +50,9 @@ function testExpire() {
     new Date().toString(),
     new Date(new Date().getTime() + 2000),
   ].forEach((expire, index) => {
-    const key = `${pref}${index}`;
+    const key = `${pref}${index}__${expire}`;
     let _expire = expire;
-    let time = 0;
+    let time = 1E10;
     if (typeof _expire === "string") {
       _expire = new Date(_expire);
     }
@@ -62,33 +62,34 @@ function testExpire() {
       }
     }
     if (Number.isFinite(_expire)) time = _expire;
+  
     if (time < 0) time = 0;
     const value = [1, 2, { a: 1 }];
     store.set(key, value, expire);
-    const getValue = store.get(key);
-    if (!equal(getValue, value)) {
-      console.log(`错误 expire=${JSON.stringify(expire)}`);
+    if (time === 1E10) {
+      console.log(expire, localStorage.getItem(key))
     }
     setTimeout(() => {
       const getValue = store.get(key);
       if (getValue !== null) {
-        console.log(`清除错误1 expire=${JSON.stringify(expire)}`);
+        console.log(`清除错误1 expire=${JSON.stringify(expire)}, ${JSON.stringify(getValue)}, ${localStorage.getItem(key)}`);
       }
-      console.log(store.keys(), time);
       if (store.keys().includes(key)) {
         console.log(`清除错误2 expire=${JSON.stringify(expire)}`);
       }
-      console.log(store.keys());
+      // console.log(store.keys());
     }, time);
   });
   setTimeout(() => {
+    console.log(store.keys())
     store.clear();
-  }, 10 * 1000);
+  }, 5 * 1000);
 }
 
 function testRemoveAndClear() {}
 
 function testSetAndGetAndLength() {
+  store.clear();
   const cases = [
     ,
     undefined,

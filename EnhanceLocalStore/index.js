@@ -9,7 +9,7 @@ const store = {
         localStorage.removeItem(key);
         return null;
       }
-      res = res.substring(expire.length);
+      res = res.substring(match[0].length);
     }
     try {
       var json = JSON.parse(res);
@@ -25,7 +25,7 @@ const store = {
     } else if (typeof expire === "string") {
       expire = new Date(expire);
     }
-    if (!(expire instanceof Date) || expire.toString() !== "Invalid Date") {
+    if (!(expire instanceof Date) || expire.toString() === "Invalid Date") {
       expire = "";
     } else {
       expire = `expire=${expire};`;
