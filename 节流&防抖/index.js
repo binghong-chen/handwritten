@@ -1,3 +1,4 @@
+// 正确写法
 function throttle(fn, delay) {
   // 函数1
   let timer = null;
@@ -9,6 +10,7 @@ function throttle(fn, delay) {
       // this -> global, arguments 是 函数2 的
       // console.log({_this: this,  arguments });
       console.log(+new Date(), "throttle 执行");
+      // 这里的 this 就是要 返回的这个函数的（函数2的）
       fn.apply(this, arguments);
       timer = null;
     }, delay);
@@ -78,11 +80,10 @@ function testThrottle() {
       clearInterval(timer);
       return;
     }
-    consoleLog(j)
+    consoleLog(j);
     j++;
   }, 200);
 }
-
 
 function testDebounce() {
   const consoleLog = debounce(console.log, Delay);
@@ -93,7 +94,7 @@ function testDebounce() {
       clearInterval(timer);
       return;
     }
-    consoleLog(j)
+    consoleLog(j);
     j++;
   }, 200);
 }
@@ -118,7 +119,7 @@ testDebounce();
 19
 1673502363199 debounce 执行
 19
-`
+`;
 
 // 节流 每隔多少秒 可以执行一次 可多次执行  执行最开始那个 实例：搜索框实时请求
 // 防抖 都少秒之内的合成一次执行 只执行一次 执行最后面那个 实例：resize 窗口，最后算数
