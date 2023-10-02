@@ -41,6 +41,6 @@ test(console.log);
 
 const data = [1, { a: 2 }, ["a", "b"]];
 const res = deepClone(data);
-console.log(res);
-console.log(res === data);
-data.forEach((v, i) => console.log(v === res[i]));
+// console.log(res);
+// console.log(res === data);
+// data.forEach((v, i) => console.log(v === res[i]));

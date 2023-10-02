@@ -14,18 +14,16 @@ function deepClone(data) {
     let clone;
     if (Array.isArray(data)) {
       clone = [];
-      cacheMap.set(data, clone);
-      clone.push(...data.map(arguments.callee));
     } else {
       clone = {};
-      // data -> clone
-      cacheMap.set(data, clone);
-      for (let key in data) {
-        clone[key] = arguments.callee(data[key]);
-      }
     }
-    return cacheMap.get(data);
-    // return clone;
+    // 在遍历子项前，占坑
+    cacheMap.set(data, clone);
+    // Object.keys(data).forEach(key => )
+    for (let key in data) {
+      clone[key] = arguments.callee(data[key]);
+    }
+    return clone;
   })(data);
 }
 
