@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bfc解决margin合并</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      /* display: flex; */
+    }
+
+    .outer {
+      background-color: gray;
+    }
+
+    .bfc {
+      /* float: left; */
+      /* position: absolute; */
+      /* overflow: hidden; */
+      /* display: inline-block; */
+      /* display: flow-root; */
+      column-count: 1;
+      /* display: table; */
+    }
+
+    .outer>.inner {
+      width: 100px;
+      height: 100px;
+      margin: 20px;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .green {
+      background-color: green;
+    }
+
+    .blue {
+      background-color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="outer">
+    <div class="inner red"></div>
+    <div class="inner green"></div>
+    <div class="inner blue"></div>
+  </div>
+  <div class="outer bfc">
+    <div class="inner red"></div>
+    <div class="inner green"></div>
+    <div class="inner blue"></div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>被其他浮动元素覆盖</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    .outer {
+      height: 100px;
+      margin-bottom: 50px;
+    }
+
+    .left {
+      float: left;
+      width: 100px;
+      height: 100px;
+      background-color: green;
+    }
+
+    .right {
+      background-color: orange;
+      width: 100px;
+      height: 100px;
+    }
+
+    .bfc {
+      /* float: left; */
+      /* position: absolute; */
+      /* overflow: hidden; */
+      /* display: inline-block; */
+      /* display: flow-root; */
+      column-count: 1;
+      /* display: table; */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="outer">
+    <div class="left"></div>
+    <div class="right">aaaaaaaaaaa</div>
+  </div>
+  <div class="outer">
+    <div class="left"></div>
+    <div class="right bfc">aaaaaaaaaaa</div>
+  </div>
+</body>
+
+</html>
