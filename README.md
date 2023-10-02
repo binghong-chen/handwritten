@@ -1,4 +1,5 @@
 # 手写代码
+
 - [x] 节流&防抖
   - [ ] 实现一个节流函数? 如果想要最后一次必须执行的话怎么实现?
 - [ ] 实现一个批量请求函数, 能够限制并发量?
@@ -7,7 +8,7 @@
 - [x] instanceof
 - [x] new
 - [x] Promise
-- [ ] JSON
+- [x] JSON
 - [ ] Redux
 - [ ] PubSub
 - [ ] 模板引擎
@@ -25,6 +26,7 @@
   - [ ] flatMap
   - [ ] isArray
   - [ ] 去重
-- [ ] localStore封装
-  - [x] JSON自动转换
+- [ ] localStore 封装
+  - [x] JSON 自动转换
   - [ ] expire 过期
+- [ ] 带并发的异步调度器 Scheduler
