@@ -19,7 +19,7 @@ const JSON1 = {
       let begin = position;
       if (checkChar("-")) {
         checkUnexpectedEnd(); //-
-        if (!/\d/.test(text[position])) throwUnexpectedToken(); //-a
+        if (!/\d/.test(text[position])) throwUnexpectedToken(); //-\t
       }
       let isNumber = false;
       while (/\d/.test(text[position])) {
@@ -29,7 +29,7 @@ const JSON1 = {
       }
       if (isNumber) return +text.substring(begin, position);
     }
-    function praseString() {
+    function parseString() {
       if (!checkChar('"')) return;
       const begin = position;
       do checkUnexpectedEnd();
@@ -38,58 +38,56 @@ const JSON1 = {
     }
     function parseArray() {
       if (!checkChar("[")) return;
-      checkUnexpectedEnd(); //[
-      jumpSpaceAndCheck();
+      jumpSpaceAndCheckEnd(); //[
       const result = [];
       if (checkChar("]")) return result; // []、[  ]
       let item;
       while ((item = parseAll()) !== undefined) {
         result.push(item);
-        jumpSpaceAndCheck();
+        jumpSpaceAndCheckEnd();
         if (checkChar("]")) return result;
-        if (!checkChar(",")) throwUnexpectedToken();
+        checkChar(",");
       }
     }
     function parseObject() {
       if (!checkChar("{")) return;
-      checkUnexpectedEnd(); //{
-      jumpSpaceAndCheck();
+      jumpSpaceAndCheckEnd(); //{ {
       const result = {};
       if (checkChar("}")) return result; // {}、{    }
       let key;
-      while ((key = praseString()) !== undefined) {
-        jumpSpaceAndCheck();
-        if (!checkChar(":")) throwUnexpectedToken();
-        jumpSpaceAndCheck();
+      while ((key = parseString()) !== undefined) {
+        jumpSpaceAndCheckEnd();
+        checkChar(":");
         const value = parseAll();
         if (value === undefined) throwUnexpectedToken();
         result[key] = value;
-        jumpSpaceAndCheck();
+        jumpSpaceAndCheckEnd();
         if (checkChar("}")) return result;
-        if (!checkChar(",")) throwUnexpectedToken();
+        checkChar(","); // {"a": 1  ,
       }
     }
     function checkChar(char) {
       const result = char === text[position];
       if (result) position++;
+      if (",:".includes(char)) {
+        if (!result) throwUnexpectedToken(); //[123 4] {"a"}
+        jumpSpaceAndCheckEnd();
+      }
       return result;
     }
     function jumpSpace() {
       while (/\s/.test(text[position])) position++;
     }
-    function jumpSpaceAndCheck() {
+    function jumpSpaceAndCheckEnd() {
       jumpSpace();
       checkUnexpectedEnd();
     }
     function throwUnexpectedToken() {
       const char = text[position];
-      if (char === '"')
-        throw SyntaxError(`Unexpected string in JSON at position ${position}`);
-      if (/[-\d]/.test(char))
-        throw SyntaxError(`Unexpected number in JSON at position ${position}`);
-      throw SyntaxError(
-        `Unexpected token ${char} in JSON at position ${position}`
-      );
+      let type = `token ${char}`;
+      if (char === '"') type = "string";
+      if (/[-\d]/.test(char)) type = "number";
+      throw SyntaxError(`Unexpected ${type} in JSON at position ${position}`);
     }
     function throwUnexpectedEnd() {
       throw SyntaxError("Unexpected end of JSON input");
@@ -98,23 +96,17 @@ const JSON1 = {
       if (position === text.length) throwUnexpectedEnd();
     }
     function parseAll() {
-      jumpSpaceAndCheck();
-      let result = parseKeyword();
-      if (result !== undefined) return result;
-      result = parseNumber();
-      if (result !== undefined) return result;
-      result = praseString();
-      if (result !== undefined) return result;
-      result = parseArray();
-      if (result !== undefined) return result;
-      result = parseObject();
-      if (result !== undefined) return result;
+      jumpSpaceAndCheckEnd();
+      let result;
+      if ((result = parseKeyword()) !== undefined) return result;
+      if ((result = parseNumber()) !== undefined) return result;
+      if ((result = parseString()) !== undefined) return result;
+      if ((result = parseArray()) !== undefined) return result;
+      if ((result = parseObject()) !== undefined) return result;
     }
     const result = parseAll();
     jumpSpace();
-    if (position < text.length) {
-      throwUnexpectedToken();
-    }
+    if (position < text.length) throwUnexpectedToken();
     return result;
   },
 };
@@ -230,6 +222,9 @@ function testNumber() {
   test("   123   123");
   test("+");
   test("-");
+  test("-\t");
+  test("- ");
+  test("-  ");
   test("-a");
   test(".");
   test("0a");
@@ -265,6 +260,8 @@ function testString() {
 
 function testArray() {
   test("[");
+  test("[    ");
+  test("[\t\t");
   test("]");
   test("[]");
   test([]);
@@ -287,14 +284,33 @@ function testArray() {
   test(JSON.stringify([false]));
   test(" [         \t]");
   test(" {         \t}   ");
+  test("[,");
+  test("[,]");
+  test("[]]");
+  test("[[]]");
+  test("[[]]]");
+  test(
+    JSON.stringify([[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]])
+  );
+  test("[null,1]");
+  test("[null,und]");
+  test(
+    JSON.stringify([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ])
+  );
+  test(JSON.stringify([[1112311321]]));
+  test(JSON.stringify([[1112311321], 1231312]));
 }
 
 function testObject() {
   test("}");
   test("{");
+  test("{   ");
   test("{}");
   test({});
-  test("{   ");
   test("1234}");
   test("1234  }");
   test('{"a": 123,   }');
@@ -305,7 +321,28 @@ function testObject() {
   test('   {  "   [a bc ] "   :    \t    123  "\r\n }');
   test('   {  "   [a bc ] "   :    \t    123  ,  \r\n []}');
   test('{""}');
+  test("{");
+  test('{"');
+  test('{"a');
+  test('{"a"');
+  test('{"a":');
+  test('{"a":"');
+  test('{"a":""');
+  test('{"a":""}');
+  test("{}");
+  test('{"}');
+  test('{"a}');
   test('{"a"}');
+  test('{"a":}');
+  test('{"a":"}');
+  test('{"a":""}');
+  test('{"a"}');
+  test("{,");
+  test("{,}");
+  test('{"a": 1,}');
+  test('{"a": 1');
+  test('{"a": 1,');
+  test('{"a": 1  ,  ');
   test(JSON.stringify({ a: true }));
   test(JSON.stringify({ a: { b: 1 } }));
   test(
