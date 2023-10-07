@@ -1,6 +1,8 @@
 "use strict";
 
 function Example(name) {
+  // 严格模式下 直接调用 Example 时 this 是 undefined
+  // 否者是 globalThis
   if (!(this instanceof Example)) {
     throw TypeError(
       `Class constructor ${Example.name} cannot be invoked without 'new'`
@@ -28,7 +30,7 @@ ex.func();
 
 // 1. use strict ???
 // 2. 检查 new Example
-// Example("abc");
+Example("abc");
 // 3. func 不可枚举
 for (let key in ex) {
   console.log(key);
