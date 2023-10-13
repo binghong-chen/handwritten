@@ -2,7 +2,6 @@
 
 - [x] 节流&防抖
   - [ ] 实现一个节流函数? 如果想要最后一次必须执行的话怎么实现?
-- [ ] 实现一个批量请求函数, 能够限制并发量?
 - [x] 深克隆
 - [x] apply bind call
 - [x] instanceof
@@ -10,7 +9,7 @@
 - [x] Promise
 - [x] JSON
 - [ ] Redux
-- [ ] PubSub
+- [x] PubSub
 - [ ] 模板引擎
 - [x] sleep
 - [ ] Array
@@ -26,7 +25,6 @@
   - [ ] flatMap
   - [ ] isArray
   - [ ] 去重
-- [ ] localStore 封装
+- [x] localStore 封装
   - [x] JSON 自动转换
-  - [ ] expire 过期
-- [ ] 带并发的异步调度器 Scheduler
+  - [x] expire 过期
