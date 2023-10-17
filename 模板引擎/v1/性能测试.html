@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>性能测试</title>
+  <script src="./index.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <div v-for="goods in goodsList">
+      <div>{{goods.title}}</div>
+      <div>{{goods.price}}</div>
+      <div>{{goods.desc}}</div>
+    </div>
+  </div>
+  <script>
+    window.onload = function () {
+      const goodsList = new Array(1E3).fill(undefined).map(_ => ({
+        title: '商品' + Math.random().toString(36).slice(3, 7),
+        price: Math.ceil(Math.random() * 1E4) / 1E2,
+        desc: '商品描述商品描述商品描述商品描述' + new Array(4).fill(undefined).map(v => Math.random().toString(36).slice(3, 7)).join('')
+      }))
+      console.log({ goodsList });
+      render('#app', {
+        data: {
+          goodsList,
+        }
+      })
+    }
+  </script>
+</body>
+
+</html>
