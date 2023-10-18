@@ -1,16 +1,16 @@
 function processText(el) {
   return el.textContent.replace(
     /\{\{(.+?)\}\}/g,
-    (expressWithBrace, express) => `\${${express}}` ?? expressWithBrace
+    (expressWithBrace, expression) => `\${${expression}}` ?? expressWithBrace
   );
 }
 
 function processAttr(el, attrName) {
   if (!(el instanceof HTMLElement)) return;
   if (!el.hasAttribute(attrName)) return;
-  const express = el.getAttribute(attrName);
+  const expression = el.getAttribute(attrName);
   el.removeAttribute(attrName);
-  return express;
+  return expression;
 }
 function toClassList(classAttr) {
   if (!classAttr) return [];
@@ -24,21 +24,57 @@ function toClassList(classAttr) {
 }
 
 function processAttrs(el) {
-  const codeList = [];
+  const attrs = [];
+  const events = [];
+  const directives = [];
   el.getAttributeNames().forEach((attrName) => {
-    if (attrName.startsWith("@")) {
-      const express = processAttr(el, attrName);
-      codeList.push(`'${attrName}': $event => {${express}}`);
+    for (let prefix of "@,v-on:".split(",")) {
+      if (!attrName.startsWith(prefix)) continue;
+      const expression = processAttr(el, attrName);
+      events.push(
+        `'${attrName.slice(prefix.length)}': {
+            value: $event => {${expression}}, 
+            expression: '${expression}'
+          }`
+      );
       return;
     }
-    if (attrName.startsWith(":") || attrName.startsWith("v-")) {
-      const express = processAttr(el, attrName);
-      codeList.push(`'${attrName}': ${express ? express : undefined}`);
+    if (attrName.startsWith("v-")) {
+      const expression = processAttr(el, attrName);
+      directives.push(
+        `'${attrName.slice(2)}': {
+          value: ${expression ? expression : undefined}, 
+          expression: '${expression}'
+        }`
+      );
       return;
     }
-    codeList.push(`'${attrName}': '${el.getAttribute(attrName)}'`);
+    if (attrName.startsWith(":")) {
+      const expression = processAttr(el, attrName);
+      attrs.push(
+        `'${attrName}': {
+          value: ${expression ? expression : undefined}, 
+          expression: '${expression}'
+        }`
+      );
+      return;
+    }
+    attrs.push(
+      `'${attrName}': {
+        value: '${el.getAttribute(attrName)}', 
+        expression: undefined
+      }`
+    );
   });
-  return `{\n${codeList.join(",\n")}\n}`;
+  return `{
+    ${attrs.join(",\n")}
+  },
+  {
+    ${events.join(",\n")}
+  },
+  {
+    ${directives.join(",\n")}
+  }`;
 }
 
 function processStyle(el, value) {
@@ -65,18 +101,18 @@ function processVIF(el) {
   el.removeAttribute("v-for");
 
   let code = "";
-  let express = processAttr(el, "v-if");
-  if (express) {
-    code += `if (${express}) {
+  let expression = processAttr(el, "v-if");
+  if (expression) {
+    code += `if (${expression}) {
       return ${processHtml(el, true)}
     }`;
   }
 
   let next = el.nextElementSibling;
   while (next !== null && next.hasAttribute("v-else-if")) {
-    express = processAttr(next, "v-else-if");
-    if (express) {
-      code += `else if (${express}) {
+    expression = processAttr(next, "v-else-if");
+    if (expression) {
+      code += `else if (${expression}) {
         return ${processHtml(next, true)}
       }`;
     }
@@ -95,12 +131,12 @@ function processVIF(el) {
 
 function processVFor(el) {
   if (!(el instanceof HTMLElement)) return;
-  const express = processAttr(el, "v-for");
-  if (!express) return;
+  const expression = processAttr(el, "v-for");
+  if (!expression) return;
 
   // item in arr, (item, index) in arr, {id, name} in arr, ({id, name}, index) in arr
   // key in obj, (key, value) in obj, (key, value, index) in obj
-  const splits = express.split(" in ");
+  const splits = expression.split(" in ");
   let args = splits[0].trim();
   if (!args.startsWith("(")) args = `(${args})`;
   let iter = splits[1];
@@ -127,18 +163,18 @@ function processVFor(el) {
 
 function processHtml(el, pass) {
   if (!(el instanceof HTMLElement)) return "";
-  const express = processVFor(el);
-  if (express) {
-    return express;
+  const expression = processVFor(el);
+  if (expression) {
+    return expression;
   }
   let code = "";
-  code += `createVDom('${el.tagName}',`;
+  code += `createVNode('${el.tagName}',`;
   code += processAttrs(el) + ",\n";
   code += [...el.childNodes]
     .map((child) => processDom(child))
     .filter((item) => item)
     .join(",\n");
-  code += `)//createVDom\n`;
+  code += `)//createVNode\n`;
   if (pass) el.setAttribute("v-tmp-pass", pass);
   return code;
 }
@@ -154,14 +190,14 @@ function processDom(el) {
   switch (el.nodeType) {
     case 1:
       if (processAttr(el, "v-tmp-pass")) return "";
-      let express = processVIF(el);
-      if (express) {
-        code = express;
+      let expression = processVIF(el);
+      if (expression) {
+        code = expression;
       } else code = processHtml(el);
       break;
     case 3:
       if (!el.textContent.trim()) return;
-      code += `createVDom('TEXT', null, \`${processText(el)}\`)`;
+      code += `createVNode('TEXT', null, null, null, \`${processText(el)}\`)`;
       break;
     default:
       break;
@@ -169,8 +205,8 @@ function processDom(el) {
   return code;
 }
 
-function createVDom(name, attrs, ...children) {
-  return { name, attrs, children };
+function createVNode(name, attrs, events, directives, ...children) {
+  return { name, attrs, events, directives, children };
 }
 
 /**
@@ -194,7 +230,6 @@ function equal(obj1, obj2, strict = false) {
     if (strict) {
       const keys1 = Object.keys(obj1);
       const keys2 = Object.keys(obj2);
-      // console.log({ keys1, keys2 });
       if (keys1.length !== keys2.length) return false;
       for (let key of keys1) {
         if (!equal(obj1[key], obj2[key])) return false;
@@ -203,14 +238,11 @@ function equal(obj1, obj2, strict = false) {
     } else {
       if (Array.isArray(obj1)) {
         if (obj1.length !== obj2.length) return false;
-        // [empty] 和 [undefined]
-        // Object.keys()不能取到 empty
         for (let i = 0; i < obj1.length; i++) {
           if (!equal(obj1[i], obj2[i])) return false;
         }
         return true;
       }
-      // {a: undefined} 和 {}
       for (let key of new Set([...Object.keys(obj1), ...Object.keys(obj2)])) {
         if (!equal(obj1[key], obj2[key])) return false;
       }
@@ -221,13 +253,16 @@ function equal(obj1, obj2, strict = false) {
 }
 
 class Vue {
-  #getVDomList;
-  #lastVDomList = [];
+  #getVNodes;
+  #oldVNodes = [];
+  static #directives = {};
 
   constructor(el, { data = {}, methods = {} }) {
     if (typeof el === "string") el = document.querySelector(el);
     if (!(el instanceof HTMLElement)) return;
     if (typeof data !== "object" || data === null) return;
+
+    this.#collectDirectives(el.children);
 
     const code = `[${[...el.childNodes]
       .map(processDom)
@@ -237,10 +272,10 @@ class Vue {
     el.innerHTML = "";
 
     // 数据双向绑定
-    const proxy = this.createProxyRecursively(data);
+    const proxy = this.#createProxyRecursively(data);
 
     // 获取虚拟DOM的方法
-    this.#getVDomList = () =>
+    this.#getVNodes = () =>
       new Function(
         ...Object.keys(proxy),
         `
@@ -251,12 +286,14 @@ class Vue {
       `
       )
       .join("\n")}
-    ${createVDom}
+    ${createVNode}
     return ${code}
   `
       )
         .call(this, ...Object.values(proxy), el)
         .filter((item) => item);
+
+    this.#log(code);
 
     // this上的数据双向绑定
     Object.keys(proxy).forEach((key) => {
@@ -273,23 +310,39 @@ class Vue {
     this.$el = el;
     this.$data = proxy;
     this.$methods = methods;
-    this.#lastVDomList = [];
+    this.#oldVNodes = [];
 
-    console.log(this);
+    this.#log(this);
     this.render();
   }
 
-  createProxyRecursively(obj) {
+  #collectDirectives(nodes) {
+    [...nodes].forEach((node) => {
+      node.getAttributeNames().forEach((attr) => {
+        if (!attr.startsWith("v-")) return;
+        const name = attr.slice(2);
+        const expression = node.getAttribute(attr);
+        const directive = Vue.#directives[name];
+        const binding = {
+          name,
+          expression,
+        };
+        directive?.bind?.(node, binding);
+      });
+      this.#collectDirectives(node.children);
+    });
+  }
+
+  #createProxyRecursively(obj) {
     if (typeof obj !== "object" || obj === null) return obj;
     if (obj instanceof Date) return obj;
     Object.keys(obj).forEach((key) => {
-      obj[key] = this.createProxyRecursively(obj[key]);
+      obj[key] = this.#createProxyRecursively(obj[key]);
     });
     const self = this;
     return new Proxy(obj, {
       set(target, property, value, receiver) {
         target[property] = value;
-        console.log("this", this);
         self.render();
         return true;
       },
@@ -298,20 +351,6 @@ class Vue {
 
   #setAttrbute(node, attrName, attrValue) {
     if (!(node instanceof HTMLElement)) return;
-    // TODO 注册的指令
-    if (attrName.startsWith("v-")) {
-      if ("v-else,v-else-if".split(",").includes(attrName)) {
-        console.error(`${attrName} should after v-if`);
-        return;
-      }
-      console.log({ attrName });
-      return;
-    }
-    // 事件
-    if (attrName.startsWith("@")) {
-      node.addEventListener(attrName.slice(1), attrValue);
-      return;
-    }
     switch (attrName) {
       case ":key":
         // TODO :key
@@ -323,80 +362,152 @@ class Vue {
         processClass(node, attrValue);
         break;
       default:
-        let _attrName = attrName.startsWith(":") ? attrName.slice(1) : attrName;
-        node.setAttribute(_attrName, attrValue);
+        let attr = attrName.startsWith(":") ? attrName.slice(1) : attrName;
+        if (attr === "value") {
+          /*
+  https://stackoverflow.com/questions/29929797/setattribute-doesnt-work-the-way-i-expect-it-to
+Sounds like you faced a confusing difference between element property value and value attribute. Those are not the same things.
+The thing is that value-attribute serves the purpose of the default value, 
+so if the element already has a property value then changing value-attribute will not be reflected in UI.
+          */
+          node.value = attrValue;
+        } else {
+          node.setAttribute(attr, attrValue);
+        }
         break;
     }
   }
 
-  #createNode(vDom) {
-    const { name, attrs, children } = vDom;
+  #createNode(vNode, oldVNode) {
+    const { name, children } = vNode;
     let node;
     if (name === "TEXT") node = document.createTextNode(children[0]);
     else {
       node = document.createElement(name);
-      for (let attrName in attrs) {
-        this.#setAttrbute(node, attrName, attrs[attrName]);
+      this.#triggerDirective(node, vNode, oldVNode, "inserted");
+      // 属性
+      if (vNode.attrs) {
+        Object.keys(vNode.attrs).forEach((name) =>
+          this.#setAttrbute(node, name, vNode.attrs[name].value)
+        );
       }
+      // 事件
+      if (vNode.events) {
+        Object.keys(vNode.events).forEach((name) =>
+          node.addEventListener(name, vNode.events[name].value)
+        );
+      }
+      this.#diff(vNode.children, [], node);
     }
-    console.log("createNode", node);
     return node;
   }
 
-  diff(vDomList, lastVDomList, parent) {
-    if (parent.nodeType === 3) {
-      console.log("update", lastVDomList[0], "->", vDomList[0]);
-      parent.textContent = vDomList[0];
-      return;
-    }
+  #triggerDirective(node, vNode, oldVNode, ...fnNames) {
+    const directives = vNode.directives ?? {};
+    Object.keys(directives).forEach((name) => {
+      const directive = Vue.#directives[name];
+      if (!directive) return;
+      const oldValue = oldVNode?.directives?.[name].value;
+      const { value, expression } = directives[name];
+      const binding = {
+        name,
+        value,
+        oldValue,
+        expression,
+        arg: "",
+        modifiers: "",
+      };
+      fnNames.forEach((fnName) =>
+        directive[fnName]?.(node, binding, vNode, oldVNode)
+      );
+    });
+  }
+
+  #log(...args) {
+    if (false) console.log(...args);
+  }
+
+  #diff(vNodes, oldVNodes, parent) {
     if (!(parent instanceof HTMLElement)) return;
-    const length = Math.max(vDomList.length, lastVDomList.length);
+    const length = Math.max(vNodes.length, oldVNodes.length);
     for (let i = 0; i < length; i++) {
-      const vDom = vDomList[i];
-      const lastVDom = lastVDomList[i];
+      const vNode = vNodes[i];
+      const oldVNode = oldVNodes[i];
       const node = parent.childNodes[i];
-      if (vDom === undefined) {
-        console.log("remove", lastVDom.name);
+      const attrs = vNode?.attrs ?? {};
+      const lastAttrs = oldVNode?.attrs ?? {};
+      const allAttrKeys = [
+        ...new Set([...Object.keys(attrs), ...Object.keys(lastAttrs)]),
+      ];
+      if (vNode === undefined) {
+        this.#log("remove", oldVNode.name);
         node.remove();
         continue;
       }
-      if (lastVDom === undefined) {
-        console.log("create", vDom.name);
-        let newNode = this.#createNode(vDom);
-        this.diff(vDom.children, [], newNode);
+      if (oldVNode === undefined) {
+        this.#log("create", vNode.name);
+        let newNode = this.#createNode(vNode, oldVNode);
         parent.appendChild(newNode);
         continue;
       }
-      if (vDom.name !== lastVDom.name) {
-        console.log("update", lastVDom.name, "->", vDom.name);
-        let newNode = this.#createNode(vDom);
-        this.diff(vDom.children, [], node);
+      if (vNode.name !== oldVNode.name) {
+        this.#log("update", oldVNode.name, "->", vNode.name);
+        let newNode = this.#createNode(vNode, oldVNode);
         parent.insertBefore(newNode, node);
         node.remove();
         continue;
       }
-      [
-        ...new Set(
-          ...Object.keys(vDom.attrs ?? {}),
-          ...Object.keys(lastVDom.attrs ?? {})
-        ),
-      ].forEach((attr) => {
-        if (!(attr in vDom.attrs)) {
+      // 所在组件的 VNode 更新时调用，但是可能发生在其子 VNode 更新之前。指令的值可能发生了改变，也可能没有。但是你可以通过比较更新前后的值来忽略不必要的模板更新。
+      this.#triggerDirective(node, vNode, oldVNode, "update");
+      allAttrKeys.forEach((attr) => {
+        if (!(attr in vNode.attrs)) {
           node.removeAttribute(attr);
           return;
         }
-        if (equal(vDom.attrs[attr], lastVDom.attrs[attr])) return;
-        this.#setAttrbute(node, attr, vDom.attrs[attr]);
+        if (equal(vNode.attrs[attr], oldVNode.attrs[attr])) return;
+        this.#log(vNode.attrs.id?.value, attr, vNode.attrs[attr].value);
+        this.#setAttrbute(node, attr, attrs[attr].value);
       });
-      this.diff(vDom.children, lastVDom.children, node);
+      // oldVNode: {name: 'TEXT', children: ['']} 会没有 node（自动过滤掉了）
+      if (vNode.name === "TEXT") {
+        const textContent = vNode.children[0];
+        const oldTextContent = oldVNode.children[0];
+        if (!equal(textContent, oldTextContent)) {
+          this.#log("update", oldTextContent, "->", textContent);
+          parent.textContent = textContent;
+        }
+      } else {
+        this.#diff(vNode.children, oldVNode.children, node);
+      }
+      // 指令所在组件的 VNode 及其子 VNode 全部更新后调用。
+      this.#triggerDirective(node, vNode, oldVNode, "componentUpdated");
     }
   }
 
   render() {
-    const vDomList = this.#getVDomList();
-    console.log({ vDomList, lastVDomList: this.#lastVDomList });
+    const vNodes = this.#getVNodes();
+    this.#log({ vNodes, oldVNodes: this.#oldVNodes });
     // 重新渲染时候，不要全部更新，比较更新（尽量最小更新，否则会有一些用户体验问题，例如：input框失去焦点）
-    this.diff(vDomList, this.#lastVDomList, this.$el);
-    this.#lastVDomList = vDomList;
+    this.#diff(vNodes, this.#oldVNodes, this.$el);
+    this.#oldVNodes = vNodes;
+  }
+
+  static directive(name, { bind, inserted, update, componentUpdated, unbind }) {
+    Vue.#directives[name] = {
+      bind,
+      inserted,
+      update,
+      componentUpdated,
+      unbind,
+    };
   }
 }
+
+Vue.directive("model", {
+  bind(el, binding, vNode, oldVNode) {
+    if (!(el instanceof HTMLElement)) return;
+    const { name, value, oldValue, expression, arg, modifiers } = binding;
+    el.setAttribute(":value", expression);
+    el.setAttribute("v-on:input", `this.${expression} = $event.target.value`);
+  },
+});
