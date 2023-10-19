@@ -24,7 +24,8 @@
         desc: '商品描述商品描述商品描述商品描述' + new Array(4).fill(undefined).map(v => Math.random().toString(36).slice(3, 7)).join('')
       }))
       console.log({ goodsList });
-      render('#app', {
+      new Vue({
+        el: "#app",
         data: {
           goodsList,
         }

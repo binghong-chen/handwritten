@@ -258,7 +258,7 @@ class Vue {
   #oldVNodes = [];
   static #directives = {};
 
-  constructor(el, { data = {}, methods = {} }) {
+  constructor({ el, data = {}, methods = {} }) {
     if (typeof el === "string") el = document.querySelector(el);
     if (!(el instanceof HTMLElement)) return;
     if (typeof data !== "object" || data === null) return;
