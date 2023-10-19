@@ -44,7 +44,7 @@ function processAttrs(el) {
       directives.push(
         `'${attrName.slice(2)}': {
           value: ${expression ? expression : undefined}, 
-          expression: '${expression}'
+          expression: ${JSON.stringify(expression)}
         }`
       );
       return;
@@ -54,15 +54,16 @@ function processAttrs(el) {
       attrs.push(
         `'${attrName}': {
           value: ${expression ? expression : undefined}, 
-          expression: '${expression}'
+          expression: ${JSON.stringify(expression)}
         }`
       );
       return;
     }
+    const expression = processAttr(el, attrName);
     attrs.push(
       `'${attrName}': {
-        value: '${el.getAttribute(attrName)}', 
-        expression: undefined
+        value: ${JSON.stringify(expression)},
+        expression: ${JSON.stringify(expression)}
       }`
     );
   });

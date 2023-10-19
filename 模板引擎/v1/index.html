@@ -75,7 +75,7 @@
       <h1 :class="[h1Class]">订单详情</h1>
       <div :key="`order-${id}`" v-for="{id, time, user, goodsList} in orders">
         <h2 :class="[{active: id === selectedOrder}, titleClass]">{{user.name}}</h2>
-        <span class="sex" :style="{fontSize: fontSize+'px'}">
+        <span class="sex" :style="{fontSize: fontSize+`px`}">
           <span v-if="user.sex === 1" style="color: greenyellow;">男</span>
           <span v-else style="color: pink;">女</span>
         </span>
